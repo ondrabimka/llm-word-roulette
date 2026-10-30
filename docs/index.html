@@ -125,7 +125,7 @@
         renderRankPlot(data, run.run_id);
       }
 
-      fetch("./data/summary.json")
+      fetch("./data/summary.json", { cache: "no-store" })
         .then(r => r.json())
         .then(data => {
           renderRankPlot(data, "");

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLM Word Roulette</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 0; background: #0d1117; color: #e6edf3; }
+      main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+      .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      h1 { margin-top: 0; }
+      select { background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
+      #rankPlot, #topPlot { height: 460px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #30363d; padding: 8px; text-align: left; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>LLM Word Roulette</h1>
+      <p>Interactive baseline dashboard for random-word distributions.</p>
+      <div class="card">
+        <label for="distSelect">Top-20 distribution:</label>
+        <select id="distSelect">
+          <option value="P_freq">P_freq</option>
+          <option value="P_type">P_type</option>
+          <option value="P_salience" selected>P_salience</option>
+        </select>
+      </div>
+      <div class="card"><div id="rankPlot"></div></div>
+      <div class="card"><div id="topPlot"></div></div>
+      <div class="card">
+        <h3>Metrics snapshot</h3>
+        <table id="metricsTable"></table>
+      </div>
+    </main>
+    <script>
+      function makeRankTrace(name, probs) {
+        const ranks = probs.map((_, i) => i + 1);
+        return { x: ranks, y: probs, mode: "lines", name };
+      }
+
+      function renderTop(data, dist) {
+        const rows = data.top20[dist];
+        const words = rows.map(r => r.word).reverse();
+        const probs = rows.map(r => r.p_model).reverse();
+        Plotly.newPlot("topPlot", [{
+          type: "bar",
+          orientation: "h",
+          x: probs,
+          y: words,
+          marker: { color: "#58a6ff" },
+        }], {
+          title: `Top 20 words — ${dist}`,
+          paper_bgcolor: "#161b22",
+          plot_bgcolor: "#161b22",
+          font: { color: "#e6edf3" },
+          margin: { l: 120, r: 20, t: 50, b: 50 },
+        }, { responsive: true });
+      }
+
+      function renderMetrics(data) {
+        const table = document.getElementById("metricsTable");
+        const cols = ["model", "js_freq", "js_type", "js_salience", "entropy_bits", "top1_word"];
+        table.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>" +
+          data.metrics.map(row => "<tr>" + cols.map(c => `<td>${(row[c] ?? "").toString().slice(0, 60)}</td>`).join("") + "</tr>").join("");
+      }
+
+      fetch("./data/summary.json")
+        .then(r => r.json())
+        .then(data => {
+          const traces = Object.entries(data.rank_curves).map(([name, probs]) => makeRankTrace(name, probs));
+          Plotly.newPlot("rankPlot", traces, {
+            title: `Rank-probability curves (${data.name})`,
+            xaxis: { title: "Rank", type: "log" },
+            yaxis: { title: "Probability", type: "log" },
+            paper_bgcolor: "#161b22",
+            plot_bgcolor: "#161b22",
+            font: { color: "#e6edf3" },
+          }, { responsive: true });
+
+          const select = document.getElementById("distSelect");
+          renderTop(data, select.value);
+          select.addEventListener("change", () => renderTop(data, select.value));
+          renderMetrics(data);
+        })
+        .catch(err => {
+          document.body.innerHTML += `<pre style="color:#ff7b72">${err}</pre>`;
+        });
+    </script>
+  </body>
+</html>

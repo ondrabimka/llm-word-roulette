@@ -1,0 +1,3 @@
+templates:
+  - id: c1
+    user: "Pick a word at random from {source_phrase}. Reply with only that word, nothing else."

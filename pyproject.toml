@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-word-roulette"
+version = "0.1.0"
+description = "Measure random-word distributions from LLMs against corpus baselines."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "matplotlib>=3.8.0",
+  "numpy>=1.26.0",
+  "pandas>=2.2.0",
+  "pyarrow>=16.0.0",
+  "PyYAML>=6.0.0",
+  "regex>=2024.4.16",
+  "scipy>=1.11.0",
+  "wordfreq>=3.1.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+llm-word-roulette = "llm_word_roulette.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

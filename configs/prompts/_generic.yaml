@@ -1,0 +1,4 @@
+templates:
+  - id: t1
+    prefix: "Here is a word chosen completely at random from {source_phrase}:"
+    terminator: "\n"

@@ -1,0 +1,2 @@
+[console_scripts]
+llm-word-roulette = llm_word_roulette.cli:main

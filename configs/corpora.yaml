@@ -1,0 +1,9 @@
+- id: shakespeare
+  name: "Shakespeare"
+  source_phrase: "the works of Shakespeare"
+  language: en
+  url: https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+  sha256: null
+  cleaner: shakespeare_dialogue
+  extra_stopwords: [thou, thee, thy, thine, art, hath, doth, ye]
+  license: public domain

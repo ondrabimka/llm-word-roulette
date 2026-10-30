@@ -1,0 +1,16 @@
+templates:
+  - id: t1
+    prefix: "Here is a word chosen completely at random from the works of Shakespeare:"
+    terminator: "\n"
+  - id: t2
+    prefix: "Random word from Shakespeare:"
+    terminator: "\n"
+  - id: t3
+    prefix: "I opened a book of Shakespeare's plays at a random page and the first word my finger landed on was"
+    terminator: "."
+  - id: t4
+    prefix: "List of random words from Shakespeare's plays:\n1."
+    terminator: "\n"
+  - id: t5
+    prefix: "Shakespeare word of the day:"
+    terminator: "\n"

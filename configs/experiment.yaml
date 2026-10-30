@@ -1,0 +1,5 @@
+default_corpus: shakespeare
+random_seed: 42
+rank_fit:
+  min: 10
+  max: 1000

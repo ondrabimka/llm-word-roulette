@@ -1,0 +1,12 @@
+templates:
+  - id: c1
+    user: "Pick a word at random from the works of Shakespeare. Reply with only that word, nothing else."
+  - id: c2
+    user: "Give me one random word from Shakespeare's plays. Output a single word."
+  - id: c3
+    user: "Imagine opening a volume of Shakespeare at a random page and putting your finger on a word. Which word is it? Answer with the word only."
+  - id: c4
+    system: "Answer with exactly one word."
+    user: "Random Shakespeare word:"
+  - id: c5
+    user: "Imagine the complete text of Shakespeare's plays and pick one word position uniformly at random, so common words like \"the\" are picked as often as they occur. Reply with one word only."

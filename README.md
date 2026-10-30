@@ -28,6 +28,21 @@ This generates:
 
 Open `docs/index.html` locally or enable GitHub Pages on the repository. A ready workflow is included at `.github/workflows/pages.yml`.
 
+### Local deploy on `develop` with Docker
+
+```bash
+git checkout develop
+docker compose up --build dashboard
+```
+
+Then open: `http://localhost:8000`
+
+Optional (if you want Ollama in Docker too):
+
+```bash
+docker compose --profile ollama up -d ollama
+```
+
 ---
 
 ## 1. Motivation

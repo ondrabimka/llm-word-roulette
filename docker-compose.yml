@@ -1,0 +1,18 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-word-roulette-dashboard
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+    command: ["sh", "/app/scripts/serve_dashboard.sh"]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: llm-word-roulette-ollama
+    ports:
+      - "11434:11434"
+    profiles: ["ollama"]

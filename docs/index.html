@@ -44,10 +44,18 @@
     </main>
     <script>
       function makeRankTrace(name, probs, color = null, width = 2) {
-        const ranks = probs.map((_, i) => i + 1);
+        const x = [];
+        const y = [];
+        probs.forEach((p, i) => {
+          const v = Number(p);
+          if (Number.isFinite(v) && v > 0) {
+            x.push(i + 1);
+            y.push(v);
+          }
+        });
         return {
-          x: ranks,
-          y: probs,
+          x,
+          y,
           mode: "lines",
           name,
           line: { color, width },
@@ -125,7 +133,7 @@
         renderRankPlot(data, run.run_id);
       }
 
-      fetch("./data/summary.json", { cache: "no-store" })
+      fetch(`./data/summary.json?t=${Date.now()}`)
         .then(r => r.json())
         .then(data => {
           renderRankPlot(data, "");

@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import numbers
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -43,3 +44,12 @@ def write_json(path: Path, payload: Any) -> None:
     ensure_dir(path.parent)
     safe_payload = _to_json_safe(payload)
     path.write_text(json.dumps(safe_payload, indent=2, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+
+
+def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
+    ensure_dir(path.parent)
+    event = {"timestamp_utc": datetime.now(timezone.utc).isoformat(), **payload}
+    safe_event = _to_json_safe(event)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(safe_event, ensure_ascii=False, allow_nan=False))
+        f.write("\n")

@@ -10,6 +10,7 @@ from llm_word_roulette.ollama_sampling import sample_ollama_distribution
 from llm_word_roulette.plots import make_plots
 from llm_word_roulette.salience import compute_salience
 from llm_word_roulette.text import prepare_corpus
+from llm_word_roulette.utils import append_jsonl
 from llm_word_roulette.website import export_website_data
 
 
@@ -17,43 +18,58 @@ def _resolve_corpus(corpus_arg: str | None) -> str:
     return corpus_arg or default_corpus()
 
 
-def cmd_prepare(corpus_id: str) -> None:
+def _log_run(command: str, corpus_id: str, details: dict[str, object]) -> None:
+    append_jsonl(
+        Path.cwd() / "results" / "runs.jsonl",
+        {"command": command, "corpus": corpus_id, "details": details},
+    )
+
+
+def cmd_prepare(corpus_id: str) -> dict[str, object]:
     corpus = get_corpus(corpus_id)
     stats = prepare_corpus(corpus)
     compute_salience(corpus)
     print(f"[prepare] corpus={corpus_id} stats={stats}")
+    return {"stats": stats}
 
 
-def cmd_baselines(corpus_id: str) -> None:
+def cmd_baselines(corpus_id: str) -> dict[str, object]:
     corpus = get_corpus(corpus_id)
     run_ids = save_baseline_distributions(corpus)
     print(f"[baselines] corpus={corpus_id} run_ids={run_ids}")
+    return {"run_ids": run_ids}
 
 
-def cmd_metrics(corpus_id: str) -> None:
+def cmd_metrics(corpus_id: str) -> dict[str, object]:
     corpus = get_corpus(corpus_id)
     df = compute_metrics(corpus)
     print(f"[metrics] rows={len(df)} file={Path.cwd() / 'results' / 'metrics.parquet'}")
+    return {"rows": int(len(df)), "file": str(Path.cwd() / "results" / "metrics.parquet")}
 
 
-def cmd_plots(corpus_id: str) -> None:
+def cmd_plots(corpus_id: str) -> dict[str, object]:
     corpus = get_corpus(corpus_id)
     files = make_plots(corpus)
     print(f"[plots] corpus={corpus_id} files={[str(x) for x in files]}")
+    return {"files": [str(x) for x in files]}
 
 
-def cmd_web(corpus_id: str) -> None:
+def cmd_web(corpus_id: str) -> dict[str, object]:
     corpus = get_corpus(corpus_id)
     out = export_website_data(corpus)
     print(f"[web] exported {out}")
+    return {"file": str(out)}
 
 
 def cmd_run_all(corpus_id: str) -> None:
-    cmd_prepare(corpus_id)
-    cmd_baselines(corpus_id)
-    cmd_metrics(corpus_id)
-    cmd_plots(corpus_id)
-    cmd_web(corpus_id)
+    details = {
+        "prepare": cmd_prepare(corpus_id),
+        "baselines": cmd_baselines(corpus_id),
+        "metrics": cmd_metrics(corpus_id),
+        "plots": cmd_plots(corpus_id),
+        "web": cmd_web(corpus_id),
+    }
+    _log_run("run-all", corpus_id, details)
 
 
 def cmd_sample_ollama(
@@ -85,6 +101,7 @@ def cmd_sample_ollama(
         f"js_type={summary['js_type']:.4f} js_salience={summary['js_salience']:.4f} "
         f"oov_rate={summary['oov_rate_sampled']}"
     )
+    _log_run("sample-ollama", corpus_id, summary)
 
 
 def main() -> None:
@@ -113,15 +130,15 @@ def main() -> None:
     corpus_id = _resolve_corpus(args.corpus)
 
     if args.command == "prepare":
-        cmd_prepare(corpus_id)
+        _log_run("prepare", corpus_id, cmd_prepare(corpus_id))
     elif args.command == "baselines":
-        cmd_baselines(corpus_id)
+        _log_run("baselines", corpus_id, cmd_baselines(corpus_id))
     elif args.command == "metrics":
-        cmd_metrics(corpus_id)
+        _log_run("metrics", corpus_id, cmd_metrics(corpus_id))
     elif args.command == "plots":
-        cmd_plots(corpus_id)
+        _log_run("plots", corpus_id, cmd_plots(corpus_id))
     elif args.command == "web":
-        cmd_web(corpus_id)
+        _log_run("web", corpus_id, cmd_web(corpus_id))
     elif args.command == "run-all":
         cmd_run_all(corpus_id)
     elif args.command == "sample-ollama":

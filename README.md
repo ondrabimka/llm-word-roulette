@@ -30,9 +30,13 @@ Optional Ollama experiments:
 ```bash
 python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250
 python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250 --rag-mode random
+python -m llm_word_roulette sample-ollama --model qwen3:1.7b --n 250
+python -m llm_word_roulette sample-ollama --model qwen3:1.7b --n 250 --rag-mode random
 ```
 
 These write Ollama run summaries into `results/ollama_runs/{corpus}/` and can be copied to `docs/data/ollama_runs/{corpus}/` for website publishing.
+
+Every CLI command also appends a structured log record to `results/runs.jsonl` (UTC timestamp, command, corpus and command-specific details), so runs are auditable and reproducible.
 
 Open `docs/index.html` locally or enable GitHub Pages on the repository. A ready workflow is included at `.github/workflows/pages.yml`.
 

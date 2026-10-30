@@ -6,6 +6,7 @@ from pathlib import Path
 from llm_word_roulette.baselines import save_baseline_distributions
 from llm_word_roulette.corpus import default_corpus, get_corpus
 from llm_word_roulette.metrics import compute_metrics
+from llm_word_roulette.ollama_sampling import sample_ollama_distribution
 from llm_word_roulette.plots import make_plots
 from llm_word_roulette.salience import compute_salience
 from llm_word_roulette.text import prepare_corpus
@@ -55,6 +56,17 @@ def cmd_run_all(corpus_id: str) -> None:
     cmd_web(corpus_id)
 
 
+def cmd_sample_ollama(corpus_id: str, model: str, n: int, template_id: str | None, pull: bool) -> None:
+    corpus = get_corpus(corpus_id)
+    summary = sample_ollama_distribution(corpus=corpus, model=model, n=n, template_id=template_id, pull=pull)
+    print(
+        "[sample-ollama] "
+        f"run_id={summary['run_id']} js_freq={summary['js_freq']:.4f} "
+        f"js_type={summary['js_type']:.4f} js_salience={summary['js_salience']:.4f} "
+        f"oov_rate={summary['oov_rate_sampled']}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="llm-word-roulette")
     parser.add_argument("--corpus", default=None, help="Corpus id (default from configs/experiment.yaml)")
@@ -62,6 +74,11 @@ def main() -> None:
 
     for name in ["prepare", "baselines", "metrics", "plots", "web", "run-all"]:
         sub.add_parser(name)
+    sample_ollama = sub.add_parser("sample-ollama")
+    sample_ollama.add_argument("--model", required=True, help="Ollama model name, e.g. qwen3:0.6b")
+    sample_ollama.add_argument("--n", type=int, default=300, help="Number of samples")
+    sample_ollama.add_argument("--template", default=None, help="Prompt template id from configs/prompts/*.yaml")
+    sample_ollama.add_argument("--no-pull", action="store_true", help="Do not pull model before sampling")
 
     args = parser.parse_args()
     corpus_id = _resolve_corpus(args.corpus)
@@ -78,6 +95,8 @@ def main() -> None:
         cmd_web(corpus_id)
     elif args.command == "run-all":
         cmd_run_all(corpus_id)
+    elif args.command == "sample-ollama":
+        cmd_sample_ollama(corpus_id, model=args.model, n=args.n, template_id=args.template, pull=not args.no_pull)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +20,12 @@ def export_website_data(corpus: Corpus) -> Path:
     sal = _load_distribution(paths, "p_salience")
     metrics = pd.read_parquet(Path.cwd() / "results" / "metrics.parquet")
 
+    ollama_dir = Path.cwd() / "results" / "ollama_runs" / corpus.id
+    ollama_runs: list[dict] = []
+    if ollama_dir.exists():
+        for file in sorted(ollama_dir.glob("*.json")):
+            ollama_runs.append(json.loads(file.read_text(encoding="utf-8")))
+
     payload = {
         "corpus": corpus.id,
         "name": corpus.name,
@@ -33,6 +40,7 @@ def export_website_data(corpus: Corpus) -> Path:
             "P_salience": sal.head(20)[["word", "p_model"]].to_dict(orient="records"),
         },
         "metrics": metrics.to_dict(orient="records"),
+        "ollama_runs": ollama_runs,
     }
 
     out = Path.cwd() / "docs" / "data" / "summary.json"

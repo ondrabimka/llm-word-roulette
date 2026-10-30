@@ -15,6 +15,7 @@ Models are reached through pluggable backends: local Hugging Face `transformers`
 ```bash
 pip install -e ".[dev]"
 python -m llm_word_roulette run-all
+python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250
 ```
 
 This generates:

@@ -31,6 +31,13 @@
       <div class="card"><div id="rankPlot"></div></div>
       <div class="card"><div id="topPlot"></div></div>
       <div class="card">
+        <h3>Ollama model runs</h3>
+        <label for="ollamaSelect">Run:</label>
+        <select id="ollamaSelect"></select>
+        <div id="ollamaSummary" style="margin-top:10px; font-size:14px"></div>
+        <div id="ollamaTopPlot" style="height:460px"></div>
+      </div>
+      <div class="card">
         <h3>Metrics snapshot</h3>
         <table id="metricsTable"></table>
       </div>
@@ -67,6 +74,33 @@
           data.metrics.map(row => "<tr>" + cols.map(c => `<td>${(row[c] ?? "").toString().slice(0, 60)}</td>`).join("") + "</tr>").join("");
       }
 
+      function renderOllamaRun(data, runId) {
+        const run = (data.ollama_runs || []).find(r => r.run_id === runId);
+        const summary = document.getElementById("ollamaSummary");
+        const plotDiv = document.getElementById("ollamaTopPlot");
+        if (!run) {
+          summary.innerHTML = "No Ollama run selected.";
+          Plotly.purge(plotDiv);
+          return;
+        }
+        summary.innerHTML = `model=<b>${run.model}</b>, n_samples=<b>${run.n_samples}</b>, js_freq=<b>${Number(run.js_freq).toFixed(4)}</b>, oov_rate=<b>${run.oov_rate_sampled ?? "n/a"}</b>`;
+        const words = (run.top20 || []).map(r => r.word).reverse();
+        const probs = (run.top20 || []).map(r => r.p_model).reverse();
+        Plotly.newPlot("ollamaTopPlot", [{
+          type: "bar",
+          orientation: "h",
+          x: probs,
+          y: words,
+          marker: { color: "#3fb950" },
+        }], {
+          title: `Top 20 words — ${run.run_id}`,
+          paper_bgcolor: "#161b22",
+          plot_bgcolor: "#161b22",
+          font: { color: "#e6edf3" },
+          margin: { l: 120, r: 20, t: 50, b: 50 },
+        }, { responsive: true });
+      }
+
       fetch("./data/summary.json")
         .then(r => r.json())
         .then(data => {
@@ -83,6 +117,16 @@
           const select = document.getElementById("distSelect");
           renderTop(data, select.value);
           select.addEventListener("change", () => renderTop(data, select.value));
+          const ollamaSelect = document.getElementById("ollamaSelect");
+          const runs = data.ollama_runs || [];
+          if (runs.length === 0) {
+            ollamaSelect.innerHTML = "<option value=\"\">No runs yet</option>";
+            renderOllamaRun(data, "");
+          } else {
+            ollamaSelect.innerHTML = runs.map(r => `<option value="${r.run_id}">${r.run_id}</option>`).join("");
+            renderOllamaRun(data, runs[runs.length - 1].run_id);
+            ollamaSelect.addEventListener("change", () => renderOllamaRun(data, ollamaSelect.value));
+          }
           renderMetrics(data);
         })
         .catch(err => {

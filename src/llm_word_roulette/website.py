@@ -20,11 +20,19 @@ def export_website_data(corpus: Corpus) -> Path:
     sal = _load_distribution(paths, "p_salience")
     metrics = pd.read_parquet(Path.cwd() / "results" / "metrics.parquet")
 
-    ollama_dir = Path.cwd() / "results" / "ollama_runs" / corpus.id
-    ollama_runs: list[dict] = []
-    if ollama_dir.exists():
+    ollama_dirs = [
+        Path.cwd() / "results" / "ollama_runs" / corpus.id,
+        Path.cwd() / "docs" / "data" / "ollama_runs" / corpus.id,
+    ]
+    by_run_id: dict[str, dict] = {}
+    for ollama_dir in ollama_dirs:
+        if not ollama_dir.exists():
+            continue
         for file in sorted(ollama_dir.glob("*.json")):
-            ollama_runs.append(json.loads(file.read_text(encoding="utf-8")))
+            run = json.loads(file.read_text(encoding="utf-8"))
+            if "run_id" in run:
+                by_run_id[run["run_id"]] = run
+    ollama_runs = [by_run_id[k] for k in sorted(by_run_id)]
 
     payload = {
         "corpus": corpus.id,

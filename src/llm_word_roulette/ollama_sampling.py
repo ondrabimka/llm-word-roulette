@@ -153,6 +153,7 @@ def sample_ollama_distribution(
         "js_freq": js_freq,
         "js_type": js_type,
         "js_salience": js_salience,
+        "rank_curve": probs["p_model"].sort_values(ascending=False).tolist(),
         "top20": probs.head(20)[["word", "p_model"]].to_dict(orient="records"),
         "samples_file": str(out_samples),
         "distribution_file": str(out_dist),

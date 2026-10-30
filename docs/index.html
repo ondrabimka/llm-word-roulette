@@ -43,9 +43,31 @@
       </div>
     </main>
     <script>
-      function makeRankTrace(name, probs) {
+      function makeRankTrace(name, probs, color = null, width = 2) {
         const ranks = probs.map((_, i) => i + 1);
-        return { x: ranks, y: probs, mode: "lines", name };
+        return {
+          x: ranks,
+          y: probs,
+          mode: "lines",
+          name,
+          line: { color, width },
+        };
+      }
+
+      function renderRankPlot(data, selectedRunId = "") {
+        const traces = Object.entries(data.rank_curves).map(([name, probs]) => makeRankTrace(name, probs));
+        const run = (data.ollama_runs || []).find(r => r.run_id === selectedRunId);
+        if (run && run.rank_curve && run.rank_curve.length > 0) {
+          traces.push(makeRankTrace(`${run.model} (${run.run_id})`, run.rank_curve, "#ff7b72", 3));
+        }
+        Plotly.newPlot("rankPlot", traces, {
+          title: `Rank-probability curves (${data.name})`,
+          xaxis: { title: "Rank", type: "log" },
+          yaxis: { title: "Probability", type: "log" },
+          paper_bgcolor: "#161b22",
+          plot_bgcolor: "#161b22",
+          font: { color: "#e6edf3" },
+        }, { responsive: true });
       }
 
       function renderTop(data, dist) {
@@ -81,6 +103,7 @@
         if (!run) {
           summary.innerHTML = "No Ollama run selected.";
           Plotly.purge(plotDiv);
+          renderRankPlot(data, "");
           return;
         }
         summary.innerHTML = `model=<b>${run.model}</b>, n_samples=<b>${run.n_samples}</b>, js_freq=<b>${Number(run.js_freq).toFixed(4)}</b>, oov_rate=<b>${run.oov_rate_sampled ?? "n/a"}</b>`;
@@ -99,20 +122,13 @@
           font: { color: "#e6edf3" },
           margin: { l: 120, r: 20, t: 50, b: 50 },
         }, { responsive: true });
+        renderRankPlot(data, run.run_id);
       }
 
       fetch("./data/summary.json")
         .then(r => r.json())
         .then(data => {
-          const traces = Object.entries(data.rank_curves).map(([name, probs]) => makeRankTrace(name, probs));
-          Plotly.newPlot("rankPlot", traces, {
-            title: `Rank-probability curves (${data.name})`,
-            xaxis: { title: "Rank", type: "log" },
-            yaxis: { title: "Probability", type: "log" },
-            paper_bgcolor: "#161b22",
-            plot_bgcolor: "#161b22",
-            font: { color: "#e6edf3" },
-          }, { responsive: true });
+          renderRankPlot(data, "");
 
           const select = document.getElementById("distSelect");
           renderTop(data, select.value);

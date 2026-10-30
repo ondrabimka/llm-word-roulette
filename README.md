@@ -15,8 +15,6 @@ Models are reached through pluggable backends: local Hugging Face `transformers`
 ```bash
 pip install -e ".[dev]"
 python -m llm_word_roulette run-all
-python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250
-python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250 --rag-mode random
 ```
 
 This generates:
@@ -26,7 +24,15 @@ This generates:
 - metrics in `results/metrics.parquet`
 - figures in `results/figures/{corpus}/`
 - interactive dashboard data in `docs/data/summary.json`
-- Ollama run summaries in `results/ollama_runs/{corpus}/` (and optionally committed to `docs/data/ollama_runs/{corpus}/`)
+
+Optional Ollama experiments:
+
+```bash
+python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250
+python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250 --rag-mode random
+```
+
+These write Ollama run summaries into `results/ollama_runs/{corpus}/` and can be copied to `docs/data/ollama_runs/{corpus}/` for website publishing.
 
 Open `docs/index.html` locally or enable GitHub Pages on the repository. A ready workflow is included at `.github/workflows/pages.yml`.
 
@@ -44,6 +50,13 @@ Optional (if you want Ollama in Docker too):
 ```bash
 docker compose --profile ollama up -d ollama
 ```
+
+### How to read the dashboard
+
+- **Rank-probability curves (log-log):** lower/steeper means more concentrated probability on a few words.
+- **Top-20 baseline chart:** quickly compares what each baseline prefers (`P_freq` mostly common words, `P_type` flatter, `P_salience` characteristic words).
+- **Ollama run panel:** shows sampled model behavior; `rag_mode=random` means each sample request was prefixed with a random corpus chunk.
+- **Top-word overlap chart:** overlays model top words against `P_freq` so differences are immediately visible.
 
 ---
 

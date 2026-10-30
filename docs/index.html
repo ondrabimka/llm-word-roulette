@@ -22,6 +22,10 @@
       <h1>LLM Word Roulette</h1>
       <p>Interactive baseline dashboard for random-word distributions.</p>
       <div class="card">
+        <h3>How to read this page</h3>
+        <p class="muted">1) Use the rank plot to compare distribution shape (all curves overlap there). 2) Use Top-20 bars for concrete words. 3) If Ollama runs are present, compare no-RAG vs random-RAG behavior and the overlap chart against P_freq.</p>
+      </div>
+      <div class="card">
         <label for="distSelect">Top-20 distribution:</label>
         <select id="distSelect">
           <option value="P_freq">P_freq</option>
@@ -113,7 +117,7 @@
         const summary = document.getElementById("ollamaSummary");
         const plotDiv = document.getElementById("ollamaTopPlot");
         if (!run) {
-          summary.innerHTML = "No Ollama run selected.";
+          summary.innerHTML = "No Ollama run selected. Baseline-only view is active.";
           Plotly.purge(plotDiv);
           Plotly.purge("topOverlapPlot");
           renderRankPlot(data, "");

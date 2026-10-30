@@ -68,8 +68,38 @@ def _sample_once(ollama_host: str, model: str, prompt: str) -> str:
     return str(response.get("response", "")).strip()
 
 
+def _build_chunks(text: str, chunk_words: int, overlap_words: int) -> list[str]:
+    words = text.split()
+    if not words:
+        return []
+    step = max(1, chunk_words - overlap_words)
+    chunks: list[str] = []
+    for start in range(0, len(words), step):
+        end = min(len(words), start + chunk_words)
+        chunk = " ".join(words[start:end]).strip()
+        if chunk:
+            chunks.append(chunk)
+        if end >= len(words):
+            break
+    return chunks
+
+
+def _build_prompt(prefix: str, rag_context: str | None) -> str:
+    if not rag_context:
+        return prefix
+    return f"{rag_context}\n\n{prefix}"
+
+
 def sample_ollama_distribution(
-    corpus: Corpus, model: str, n: int, template_id: str | None = None, pull: bool = True
+    corpus: Corpus,
+    model: str,
+    n: int,
+    template_id: str | None = None,
+    pull: bool = True,
+    rag_mode: str = "none",
+    rag_chunk_words: int = 150,
+    rag_overlap_words: int = 30,
+    rag_seed: int = 42,
 ) -> dict[str, object]:
     paths = corpus_paths(corpus.id)
     counts = pd.read_parquet(paths["counts"])
@@ -89,8 +119,18 @@ def sample_ollama_distribution(
     in_vocab_counts: dict[str, int] = {}
     parsed_count = 0
     in_vocab = 0
+    rng = np.random.default_rng(rag_seed)
+    clean_text = paths["clean"].read_text(encoding="utf-8") if rag_mode == "random" else ""
+    chunks = _build_chunks(clean_text, rag_chunk_words, rag_overlap_words) if rag_mode == "random" else []
+    if rag_mode == "random" and not chunks:
+        raise ValueError("RAG random mode requested but no chunks could be built from clean text.")
+
     for idx in range(n):
-        raw = _sample_once(ollama_host, model, prefix)
+        selected_context = None
+        if rag_mode == "random":
+            selected_context = str(chunks[int(rng.integers(0, len(chunks)))])
+        prompt = _build_prompt(prefix, selected_context)
+        raw = _sample_once(ollama_host, model, prompt)
         parsed = parse_chat_word(raw)
         is_in_vocab = bool(parsed and parsed in vocabulary)
         if parsed:
@@ -104,6 +144,8 @@ def sample_ollama_distribution(
                 "raw_response": raw,
                 "parsed_word": parsed,
                 "in_vocab": is_in_vocab,
+                "rag_mode": rag_mode,
+                "rag_context": selected_context,
             }
         )
 
@@ -130,7 +172,7 @@ def sample_ollama_distribution(
     js_salience = float(jensen_shannon(p_model, p_sal))
 
     model_slug = _slug(model)
-    run_id = f"ollama-{model_slug}-sample-{template['id']}-n{n}"
+    run_id = f"ollama-{model_slug}-sample-{template['id']}-{rag_mode}-n{n}"
     out_samples = Path.cwd() / "results" / "samples" / corpus.id / f"{run_id}.parquet"
     out_dist = paths["distributions_dir"] / f"{run_id}.parquet"
     out_stats = Path.cwd() / "results" / "ollama_runs" / corpus.id / f"{run_id}.json"
@@ -145,6 +187,9 @@ def sample_ollama_distribution(
         "corpus": corpus.id,
         "model": model,
         "template_id": template["id"],
+        "rag_mode": rag_mode,
+        "rag_chunk_words": rag_chunk_words if rag_mode == "random" else None,
+        "rag_overlap_words": rag_overlap_words if rag_mode == "random" else None,
         "n_samples": n,
         "n_parsed": parsed_count,
         "parse_failure_rate": (n - parsed_count) / n if n > 0 else None,
@@ -155,6 +200,7 @@ def sample_ollama_distribution(
         "js_salience": js_salience,
         "rank_curve": probs["p_model"].sort_values(ascending=False).tolist(),
         "top20": probs.head(20)[["word", "p_model"]].to_dict(orient="records"),
+        "example_contexts": sample_df["rag_context"].dropna().head(3).tolist(),
         "samples_file": str(out_samples),
         "distribution_file": str(out_dist),
     }

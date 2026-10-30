@@ -56,12 +56,32 @@ def cmd_run_all(corpus_id: str) -> None:
     cmd_web(corpus_id)
 
 
-def cmd_sample_ollama(corpus_id: str, model: str, n: int, template_id: str | None, pull: bool) -> None:
+def cmd_sample_ollama(
+    corpus_id: str,
+    model: str,
+    n: int,
+    template_id: str | None,
+    pull: bool,
+    rag_mode: str,
+    rag_chunk_words: int,
+    rag_overlap_words: int,
+    rag_seed: int,
+) -> None:
     corpus = get_corpus(corpus_id)
-    summary = sample_ollama_distribution(corpus=corpus, model=model, n=n, template_id=template_id, pull=pull)
+    summary = sample_ollama_distribution(
+        corpus=corpus,
+        model=model,
+        n=n,
+        template_id=template_id,
+        pull=pull,
+        rag_mode=rag_mode,
+        rag_chunk_words=rag_chunk_words,
+        rag_overlap_words=rag_overlap_words,
+        rag_seed=rag_seed,
+    )
     print(
         "[sample-ollama] "
-        f"run_id={summary['run_id']} js_freq={summary['js_freq']:.4f} "
+        f"run_id={summary['run_id']} rag_mode={summary['rag_mode']} js_freq={summary['js_freq']:.4f} "
         f"js_type={summary['js_type']:.4f} js_salience={summary['js_salience']:.4f} "
         f"oov_rate={summary['oov_rate_sampled']}"
     )
@@ -79,6 +99,15 @@ def main() -> None:
     sample_ollama.add_argument("--n", type=int, default=300, help="Number of samples")
     sample_ollama.add_argument("--template", default=None, help="Prompt template id from configs/prompts/*.yaml")
     sample_ollama.add_argument("--no-pull", action="store_true", help="Do not pull model before sampling")
+    sample_ollama.add_argument(
+        "--rag-mode",
+        default="none",
+        choices=["none", "random"],
+        help="RAG context mode. 'random' prepends random corpus chunks.",
+    )
+    sample_ollama.add_argument("--rag-chunk-words", type=int, default=150, help="RAG chunk size in words")
+    sample_ollama.add_argument("--rag-overlap-words", type=int, default=30, help="RAG chunk overlap in words")
+    sample_ollama.add_argument("--rag-seed", type=int, default=42, help="Seed for random RAG chunk selection")
 
     args = parser.parse_args()
     corpus_id = _resolve_corpus(args.corpus)
@@ -96,7 +125,17 @@ def main() -> None:
     elif args.command == "run-all":
         cmd_run_all(corpus_id)
     elif args.command == "sample-ollama":
-        cmd_sample_ollama(corpus_id, model=args.model, n=args.n, template_id=args.template, pull=not args.no_pull)
+        cmd_sample_ollama(
+            corpus_id,
+            model=args.model,
+            n=args.n,
+            template_id=args.template,
+            pull=not args.no_pull,
+            rag_mode=args.rag_mode,
+            rag_chunk_words=args.rag_chunk_words,
+            rag_overlap_words=args.rag_overlap_words,
+            rag_seed=args.rag_seed,
+        )
 
 
 if __name__ == "__main__":

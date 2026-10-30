@@ -16,6 +16,7 @@ Models are reached through pluggable backends: local Hugging Face `transformers`
 pip install -e ".[dev]"
 python -m llm_word_roulette run-all
 python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250
+python -m llm_word_roulette sample-ollama --model qwen3:0.6b --n 250 --rag-mode random
 ```
 
 This generates:
@@ -25,6 +26,7 @@ This generates:
 - metrics in `results/metrics.parquet`
 - figures in `results/figures/{corpus}/`
 - interactive dashboard data in `docs/data/summary.json`
+- Ollama run summaries in `results/ollama_runs/{corpus}/` (and optionally committed to `docs/data/ollama_runs/{corpus}/`)
 
 Open `docs/index.html` locally or enable GitHub Pages on the repository. A ready workflow is included at `.github/workflows/pages.yml`.
 

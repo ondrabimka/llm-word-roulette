@@ -10,8 +10,9 @@
       main { max-width: 1100px; margin: 0 auto; padding: 24px; }
       .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
       h1 { margin-top: 0; }
+      p.muted { color: #9aa4b2; margin: 6px 0 0; font-size: 14px; line-height: 1.4; }
       select { background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
-      #rankPlot, #topPlot { height: 460px; }
+      #rankPlot, #topPlot, #topOverlapPlot { height: 460px; }
       table { width: 100%; border-collapse: collapse; }
       th, td { border-bottom: 1px solid #30363d; padding: 8px; text-align: left; font-size: 14px; }
     </style>
@@ -27,6 +28,7 @@
           <option value="P_type">P_type</option>
           <option value="P_salience" selected>P_salience</option>
         </select>
+        <p class="muted">Baselines: P_freq = word frequency in Shakespeare, P_type = uniform over vocabulary, P_salience = characteristic Shakespeare words.</p>
       </div>
       <div class="card"><div id="rankPlot"></div></div>
       <div class="card"><div id="topPlot"></div></div>
@@ -34,8 +36,10 @@
         <h3>Ollama model runs</h3>
         <label for="ollamaSelect">Run:</label>
         <select id="ollamaSelect"></select>
+        <p class="muted">This panel shows model sampling runs. If `rag_mode=random`, each request gets a random corpus chunk prepended before asking for the random word.</p>
         <div id="ollamaSummary" style="margin-top:10px; font-size:14px"></div>
         <div id="ollamaTopPlot" style="height:460px"></div>
+        <div id="topOverlapPlot"></div>
       </div>
       <div class="card">
         <h3>Metrics snapshot</h3>
@@ -111,10 +115,11 @@
         if (!run) {
           summary.innerHTML = "No Ollama run selected.";
           Plotly.purge(plotDiv);
+          Plotly.purge("topOverlapPlot");
           renderRankPlot(data, "");
           return;
         }
-        summary.innerHTML = `model=<b>${run.model}</b>, n_samples=<b>${run.n_samples}</b>, js_freq=<b>${Number(run.js_freq).toFixed(4)}</b>, oov_rate=<b>${run.oov_rate_sampled ?? "n/a"}</b>`;
+        summary.innerHTML = `model=<b>${run.model}</b>, rag_mode=<b>${run.rag_mode || "none"}</b>, n_samples=<b>${run.n_samples}</b>, js_freq=<b>${Number(run.js_freq).toFixed(4)}</b>, oov_rate=<b>${run.oov_rate_sampled ?? "n/a"}</b>`;
         const words = (run.top20 || []).map(r => r.word).reverse();
         const probs = (run.top20 || []).map(r => r.p_model).reverse();
         Plotly.newPlot("ollamaTopPlot", [{
@@ -129,6 +134,33 @@
           plot_bgcolor: "#161b22",
           font: { color: "#e6edf3" },
           margin: { l: 120, r: 20, t: 50, b: 50 },
+        }, { responsive: true });
+
+        const refName = "P_freq";
+        const refMap = new Map((data.top20?.[refName] || []).map(r => [r.word, r.p_model]));
+        const modelMap = new Map((run.top20 || []).map(r => [r.word, r.p_model]));
+        const overlapWords = [...new Set([...refMap.keys(), ...modelMap.keys()])].slice(0, 20);
+        Plotly.newPlot("topOverlapPlot", [
+          {
+            type: "bar",
+            name: `${run.model} (${run.rag_mode || "none"})`,
+            x: overlapWords,
+            y: overlapWords.map(w => modelMap.get(w) || 0),
+            marker: { color: "#3fb950" },
+          },
+          {
+            type: "bar",
+            name: refName,
+            x: overlapWords,
+            y: overlapWords.map(w => refMap.get(w) || 0),
+            marker: { color: "#58a6ff" },
+          },
+        ], {
+          barmode: "overlay",
+          title: "Top-word overlap: model vs P_freq",
+          paper_bgcolor: "#161b22",
+          plot_bgcolor: "#161b22",
+          font: { color: "#e6edf3" },
         }, { responsive: true });
         renderRankPlot(data, run.run_id);
       }

@@ -30,11 +30,14 @@ jobs:
         run: |
           python -m llm_word_roulette run-all
       - uses: actions/configure-pages@v5
+        if: ${{ github.event.repository.has_pages }}
       - uses: actions/upload-pages-artifact@v3
+        if: ${{ github.event.repository.has_pages }}
         with:
           path: ./docs
 
   deploy:
+    if: ${{ github.event.repository.has_pages }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

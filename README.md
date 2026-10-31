@@ -40,6 +40,19 @@ Every CLI command also appends a structured log record to `results/runs.jsonl` (
 
 Open `docs/index.html` locally or enable GitHub Pages on the repository. A ready workflow is included at `.github/workflows/pages.yml`.
 
+### Implementation status (current)
+
+Implemented now:
+- corpus prep, tokenization, counts, salience and baseline distributions,
+- metrics + plots + interactive dashboard,
+- Ollama sampling experiments (no-RAG and random-RAG),
+- structured command/run logging in `results/runs.jsonl`.
+
+Not yet implemented from the full spec:
+- full backend matrix (OpenAI/Azure/Anthropic/HF exact scoring stack),
+- retrieval index/retriever evaluation pipeline,
+- full milestone test matrix and final report automation.
+
 ### Local deploy on `develop` with Docker
 
 ```bash
@@ -632,4 +645,4 @@ Build in this order; each milestone ends with tests passing and a short entry in
 
 ## 18. License
 
-Code: MIT (to be confirmed by the repository owner). Tiny Shakespeare text is public domain; model weights are subject to their own licenses.
+Code: MIT (see `LICENSE`). Tiny Shakespeare text is public domain; model weights are subject to their own licenses.
